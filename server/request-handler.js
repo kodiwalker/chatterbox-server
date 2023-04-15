@@ -11,9 +11,13 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
+const fs = require('fs');
+const path = require('path');
+var url = require('url');
+let messages = [];
+let messageCount = 0;
 
 var requestHandler = function (request, response) {
-  let messages = [{ name: 'abc' }];
   // const { headers, method, url } = request;
 
   // Request and Response come from node's http module.
@@ -30,11 +34,37 @@ var requestHandler = function (request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
-  if (request.url !== '/classes/messages') {
-    response.writeHead(404, { 'Content-Type': 'text/plain' });
-    response.write('404 Not found');
-    response.end();
-  } else {
+  if (request.url !== 'classes/messages') { //^
+    // response.writeHead(404, { 'Content-Type': 'text/plain' });
+    // response.end('404 not found');
+    // fs.readFile('/Users/kode/hR/rfp2303-chatterbox-server/chatterbox.html')
+
+    htmlPath = path.join(__dirname, '../chatterbox.html');
+
+    let newPath = url.parse(request.url).pathname;
+    //^ resources path = path.join(__dirname, '..', newPath)
+
+    console.log('Request URL:', request.url, ' and newPath:', newPath, '-----htmlPath:', htmlPath);
+
+    fs.readFile(htmlPath, function (error, data) {
+      if (error) {
+        response.writeHead(404);
+        response.write('This page does not exist');
+        response.end();
+      } else {
+        response.writeHead(200, {
+          'Content-Type': 'text/html'
+        });
+        response.write(data);
+        response.end();
+      }
+    });
+    // .then(contents => {
+    //   response.setHeader('Content-Type', 'text/html');
+    //   response.writeHead(200);
+    //   response.end(contents);
+    // });
+  } else { //^ else if (request.url === 'classes/messages')
 
     let statusCode;
     console.log('Serving request type ' + request.method + ' for url ' + request.url);
@@ -50,12 +80,14 @@ var requestHandler = function (request, response) {
         body.push(chunk);
       }).on('end', () => {
         body = Buffer.concat(body).toString();
-        messages.push(JSON.parse(body));
+        let bodyObj = JSON.parse(body);
+        //^ give random id as obj property message_id : 674542
+        bodyObj['message_id'] = messageCount++;
+        messages.push(bodyObj);
 
         headers['Content-Type'] = 'application/json';
         headers['Data-Type'] = 'application/json';
         response.writeHead(statusCode, headers);
-
         response.end(body);
 
       });
@@ -65,9 +97,21 @@ var requestHandler = function (request, response) {
       statusCode = 200;
       headers['Content-Type'] = 'application/json';
       response.writeHead(statusCode, headers);
+      console.log(messages);
       response.end(JSON.stringify(messages));
+
+    } else if (request.method === 'OPTIONS') {
+      statusCode = 200;
+      headers['Allow'] = 'GET, POST';
+      response.writeHead(statusCode, headers);
+      response.end();
     }
-  }
+  } //^ else , catches the scripts and css
+
+
+
+
+
   // The outgoing status.
 
   // See the note below about CORS headers.
