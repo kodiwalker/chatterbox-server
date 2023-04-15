@@ -34,27 +34,22 @@ var requestHandler = function (request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
-  if (request.url !== 'classes/messages') { //^
+  if (request.url === '/' || request.url.includes('/?username=')) { //^
     // response.writeHead(404, { 'Content-Type': 'text/plain' });
     // response.end('404 not found');
     // fs.readFile('/Users/kode/hR/rfp2303-chatterbox-server/chatterbox.html')
 
     htmlPath = path.join(__dirname, '../chatterbox.html');
-
-    let newPath = url.parse(request.url).pathname;
-    //^ resources path = path.join(__dirname, '..', newPath)
-
-    console.log('Request URL:', request.url, ' and newPath:', newPath, '-----htmlPath:', htmlPath);
-
+    console.log('HTMLPATH:', htmlPath, 'REQUEST URL:', request.url);
     fs.readFile(htmlPath, function (error, data) {
       if (error) {
         response.writeHead(404);
         response.write('This page does not exist');
         response.end();
       } else {
-        response.writeHead(200, {
-          'Content-Type': 'text/html'
-        });
+        var headers = defaultCorsHeaders;
+        headers['Content-Type'] = 'text/html';
+        response.writeHead(200, headers);
         response.write(data);
         response.end();
       }
@@ -64,13 +59,13 @@ var requestHandler = function (request, response) {
     //   response.writeHead(200);
     //   response.end(contents);
     // });
-  } else { //^ else if (request.url === 'classes/messages')
+  } else if (request.url === '/classes/messages') { //^ else if (request.url === 'classes/messages')
+
+    // console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
     let statusCode;
-    console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
     var headers = defaultCorsHeaders;
-
 
     if (request.method === 'POST') {
       statusCode = 201;
@@ -97,7 +92,7 @@ var requestHandler = function (request, response) {
       statusCode = 200;
       headers['Content-Type'] = 'application/json';
       response.writeHead(statusCode, headers);
-      console.log(messages);
+      // console.log(messages);
       response.end(JSON.stringify(messages));
 
     } else if (request.method === 'OPTIONS') {
@@ -106,7 +101,47 @@ var requestHandler = function (request, response) {
       response.writeHead(statusCode, headers);
       response.end();
     }
-  } //^ else , catches the scripts and css
+  } else if (request.url.includes('css')) {
+    let newPath = url.parse(request.url).pathname;
+    let resourcePath = path.join(__dirname, '..', newPath);
+
+    // console.log('RESOURCEPATH:', resourcePath);
+
+    fs.readFile(resourcePath, function (error, data) {
+      if (error) {
+        response.writeHead(404);
+        response.write('This page does not exist');
+        response.end();
+      } else {
+        response.writeHead(200, {
+          'Content-Type': 'text/css'
+        });
+        response.write(data);
+        response.end();
+      }
+    });
+  } else {
+    let newPath = url.parse(request.url).pathname;
+    let resourcePath = path.join(__dirname, '..', newPath);
+
+    console.log('RESOURCEPATH:', resourcePath);
+
+    fs.readFile(resourcePath, function (error, data) {
+      if (error) {
+        response.writeHead(404);
+        response.write('This page does not exist');
+        response.end();
+      } else {
+        response.writeHead(200, {
+          'Content-Type': 'text/html'
+        });
+        response.write(data);
+        response.end();
+      }
+    });
+
+    // console.log('Request URL:', request.url, ' and newPath:', newPath, '-----htmlPath:', htmlPath);
+  }//^ else , catches the scripts and css
 
 
 
